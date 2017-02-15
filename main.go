@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
+	"time"
 )
 
-var file = `
-{
+var file = `{
     "configs": [
         {
             "server": "%s",
@@ -31,23 +32,25 @@ var file = `
     "useOnlinePac": false
 }`
 
-const (
+var (
 	// ID appId
 	ID = ""
 	// Token Token 1
 	Token = ""
 	// Secret Secret 1
 	Secret = ""
+	// Port 靠端口来识别，json返回的一般都是float类型的
+	Port = 8989.0
 )
 
 func main() {
-	resolve(info(), ID)
-	err := exec.Command("Shadowsocks.exe").Start()
-	if err != nil {
-		fmt.Println("找不到 Shadowsocks.exe 文件， 请将本程序移动到Shadowsocks.exe根目录！")
-		return
+	begin := time.Now()
+	if ID == "" && Token == "" && Secret == "" {
+		ID, Token, Secret = apikey()
 	}
-	fmt.Println("状态：正常运行")
+	resolve(info(), ID)
+	run()
+	fmt.Println(time.Now().Sub(begin))
 }
 
 func info() []byte {
@@ -81,7 +84,7 @@ func resolve(data []byte, ID string) {
 	}
 	for _, v := range portMap {
 		for _, i := range v.([]interface{}) {
-			if i.(map[string]interface{})["container_port"] == 8989.0 { // json返回的数字大多是float64
+			if i.(map[string]interface{})["container_port"] == Port {
 				host = i.(map[string]interface{})["host"]
 				port = i.(map[string]interface{})["service_port"]
 			}
@@ -91,4 +94,27 @@ func resolve(data []byte, ID string) {
 	file, _ := os.Create("gui-config.json") // create创建文件时如果存在会清空文件，不会返回错误
 	defer file.Close()
 	file.WriteString(centen)
+}
+
+func apikey() (ID, Token, Secret string) {
+	file, err := ioutil.ReadFile("./apikey.txt")
+	if err != nil {
+		fmt.Println("Error：文件不存在！")
+		return
+	}
+
+	doc := strings.Split(string(file), "\r\n")
+	ID = strings.TrimSpace(strings.Split(doc[0], ":")[1])
+	Token = strings.TrimSpace(strings.Split(doc[1], ":")[1])
+	Secret = strings.TrimSpace(strings.Split(doc[2], ":")[1])
+	return ID, Token, Secret
+}
+
+func run() {
+	err := exec.Command("Shadowsocks.exe").Start()
+	if err != nil {
+		fmt.Println("找不到 Shadowsocks.exe 文件， 请将本程序移动到Shadowsocks.exe根目录！")
+		return
+	}
+	fmt.Println("状态：正常运行")
 }
