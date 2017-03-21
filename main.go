@@ -4,11 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
+)
+
+var (
+	// ID appId
+	ID = ""
+	// Token Token 1
+	Token = ""
+	// Secret Secret 1
+	Secret = ""
+	// Port 如果未修改过不要改动
+	Port = 8989.0
 )
 
 var file = `{
@@ -32,41 +43,36 @@ var file = `{
     "useOnlinePac": false
 }`
 
-var (
-	// ID appId
-	ID = ""
-	// Token Token 1
-	Token = ""
-	// Secret Secret 1
-	Secret = ""
-	// Port 靠端口来识别，json返回的一般都是float类型的
-	Port = 8989.0
-)
-
 func main() {
-	begin := time.Now()
-	if ID == "" && Token == "" && Secret == "" {
-		ID, Token, Secret = apikey()
-	}
-	resolve(info(), ID)
+	init := time.Now()
+	resolve(infoGet())
 	run()
-	fmt.Println(time.Now().Sub(begin))
+	fmt.Println(time.Since(init))
 }
 
-func info() []byte {
+func infoGet() []byte {
 	url := "https://app.arukas.io/api/containers"
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	errCheck(err)
 	req.Header.Set("Content-Type", "application/vnd.api+json")
 	req.Header.Set("Accept", "application/vnd.api+json")
 	req.Header.Set("User-Agent", "地外行星")
 	req.SetBasicAuth(Token, Secret)
-	resp, _ := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
+	errCheck(err)
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	errCheck(err)
 	return body
 }
 
-func resolve(data []byte, ID string) {
+func errCheck(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func resolve(data []byte) {
 	var (
 		dat     map[string]interface{}
 		portMap []interface{}
@@ -96,25 +102,10 @@ func resolve(data []byte, ID string) {
 	file.WriteString(centen)
 }
 
-func apikey() (ID, Token, Secret string) {
-	file, err := ioutil.ReadFile("./apikey.txt")
-	if err != nil {
-		fmt.Println("Error：文件不存在！")
-		return
-	}
-
-	doc := strings.Split(string(file), "\r\n")
-	ID = strings.TrimSpace(strings.Split(doc[0], ":")[1])
-	Token = strings.TrimSpace(strings.Split(doc[1], ":")[1])
-	Secret = strings.TrimSpace(strings.Split(doc[2], ":")[1])
-	return ID, Token, Secret
-}
-
 func run() {
 	err := exec.Command("Shadowsocks.exe").Start()
 	if err != nil {
-		fmt.Println("找不到 Shadowsocks.exe 文件， 请将本程序移动到Shadowsocks.exe根目录！")
-		return
+		log.Fatalln("找不到 Shadowsocks.exe 文件， 请将本程序移动到Shadowsocks.exe根目录！")
 	}
-	fmt.Println("状态：正常运行")
+	log.Println("状态：正常运行")
 }

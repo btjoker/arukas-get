@@ -6,35 +6,32 @@
 
 构建后，丢到 Shadowsocks 根目录，然后为这个执行文件创建一个桌面快捷方式。
 
+你先需要获取arukas的 Token和Secret [传送门](https://app.arukas.io/settings/api-keys)
+
+***
+* 安装有 `golang` 
 `git clone https://github.com/btjoker/arukas-get`
-
-你需要获取arukas的apikey [传送门](https://app.arukas.io/settings/api-keys)
-
-然后将安装了 Shadowsocks 的 `APPID`，申请的 `Token` 和 `Secret`。
-
-替换掉 `main.go` 里的该字段，对于梯子的默认寻找端口是 `8989` 端口，如果你自己设定的不一样请修改 `main.go` 中第 `44` 行的变量。
-
-* `Port = 8989.0`
-
-
-其中 `8989.0` 就是你要修改的地方，因为获取到的数值是 `float64` 类型的数值，
-所以不要丢失后面的 `.0`.
-
-
-需要修改的地方:
+然后将安装了 `Shadowsocks` 服务器的 `AppID`，申请的 `Token` 和 `Secret`。
+需要填写的地方:
 
     var (
-	    // ID arukas的APPID
-	    ID = "11111111111111"
+	    // ID arukas的AppID
+	    ID = ""
 	    // Token 
-	    Token = "1111111111111111111"
+	    Token = ""
 	    // Secret
-	    Secret = "111111111111111111111111111111111111111"
-    )
+	    Secret = ""
+		// Port 如果未修改过不要改动
+		Port = 8989.0
+	)
+保存后直接 `go build` 编译好，丢到 Shadowsocks 根目录，然后为这个执行文件创建一个桌面快捷方式。运行。 
 
-* 新增功能，如果不修改 `main.go` 文件，在编译好的文件根目录下创建一个名叫  `apikey.txt` 的文件。填写上 ID，Token，Secret，保存后。运行后会读取该文件。然后生成可用的 `gui-config.json` 文件。
 
-格式：
+*  无编译环境：
+	下载 `releases` 中的压缩包， 解压缩到 `Shadowsocks` 根目录。填写`apikey.txt` 的文件，	保存后。
+	为 `arukas-get.exe` 创建一个桌面快捷方式。运行。 
+
+填写格式：
 
     ID:11111111111111
 
@@ -43,6 +40,9 @@
     Secret:111111111111111111111111111111111111111
 
 
-
-Node：
+Note：
 * 可自行修改，随意使用。免费测试结束后估计会砍不少免费功能。
+* 使用本程序前， 请先备份原有的 `gui-config.json` 文件，本程序生成的文件会覆盖原有内容。
+* http://acjoker.tk
+***
+LICENSE GPL3.0
