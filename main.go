@@ -8,20 +8,12 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
-var (
-	// ID appId
-	ID = ""
-	// Token Token 1
-	Token = ""
-	// Secret Secret 1
-	Secret = ""
-	// Port 如果未修改过不要改动
-	Port = 8989.0
-)
-
+var Port = 8989.0
+var ID, Token, Secret = apikey()
 var file = `{
     "configs": [
         {
@@ -100,6 +92,17 @@ func resolve(data []byte) {
 	file, _ := os.Create("gui-config.json") // create创建文件时如果存在会清空文件，不会返回错误
 	defer file.Close()
 	file.WriteString(centen)
+}
+
+func apikey() (ID, Token, Secret string) {
+	file, err := ioutil.ReadFile("./apikey.txt")
+	errCheck(err)
+
+	doc := strings.Split(string(file), "\r\n")
+	ID = strings.TrimSpace(strings.Split(doc[0], ":")[1])
+	Token = strings.TrimSpace(strings.Split(doc[1], ":")[1])
+	Secret = strings.TrimSpace(strings.Split(doc[2], ":")[1])
+	return ID, Token, Secret
 }
 
 func run() {
