@@ -91,7 +91,7 @@ type Config struct {
 	Server     string `json:"server"`
 	ServerPort int    `json:"server_port"`
 	Password   string `json:"password"`
-	Method     string `json:"Password"`
+	Method     string `json:"method"`
 	Remarks    string `json:"remarks"`
 }
 
