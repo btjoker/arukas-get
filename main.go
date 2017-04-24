@@ -9,103 +9,67 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/btjoker/arukas-get/api"
 )
 
-var (
-	// ID appId
-	ID = ""
-	// Token Token 1
+const (
+	// Token Token
 	Token = ""
-	// Secret Secret 1
+	// Secret Secret
 	Secret = ""
-	// Port 如果未修改过不要改动
-	Port = 8989.0
+	// Port ss设置的端口
+	Port = 8989
+	// Password ss的密码,
+	Password = ``
 )
-
-var file = `{
-    "configs": [
-        {
-            "server": "%s",
-            "server_port": %.0f,
-            "password": "acjoker.tk",
-            "method": "aes-256-cfb",
-            "remarks": "arukas"
-        }
-    ],
-    "strategy": null,
-    "index": 0,
-    "global": false,
-    "enabled": true,
-    "shareOverLan": false,
-    "isDefault": false,
-    "localPort": 1080,
-    "pacUrl": null,
-    "useOnlinePac": false
-}`
 
 func main() {
 	init := time.Now()
-	resolve(infoGet())
-	run()
+	if !resolve() {
+		fmt.Println("无法写入, 生成失败!")
+		return
+	}
+	fmt.Println("生成成功!")
+	exec.Command("Shadowsocks.exe").Start()
 	fmt.Println(time.Since(init))
 }
 
-func infoGet() []byte {
-	url := "https://app.arukas.io/api/containers"
-	req, err := http.NewRequest("GET", url, nil)
-	errCheck(err)
+func resolve() bool {
+	var (
+		JSON    api.Application
+		configs api.GuiConfig
+	)
+	req, _ := http.NewRequest("GET", "https://app.arukas.io/api/containers", nil)
 	req.Header.Set("Content-Type", "application/vnd.api+json")
 	req.Header.Set("Accept", "application/vnd.api+json")
 	req.Header.Set("User-Agent", "地外行星")
+	// 基本认证
 	req.SetBasicAuth(Token, Secret)
 	resp, err := http.DefaultClient.Do(req)
-	errCheck(err)
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	errCheck(err)
-	return body
-}
-
-func errCheck(err error) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-}
-
-func resolve(data []byte) {
-	var (
-		dat     map[string]interface{}
-		portMap []interface{}
-		host    interface{}
-		port    interface{}
-	)
-	if err := json.Unmarshal(data, &dat); err != nil {
-		panic(err)
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	if err := json.Unmarshal(body, &JSON); err != nil {
+		log.Fatalln(err)
 	}
-	applist := dat["data"].([]interface{})
-	for _, v := range applist {
-		if v.(map[string]interface{})["id"] == ID {
-			portMap = v.(map[string]interface{})["attributes"].(map[string]interface{})["port_mappings"].([]interface{})
-		}
-	}
-	for _, v := range portMap {
-		for _, i := range v.([]interface{}) {
-			if i.(map[string]interface{})["container_port"] == Port {
-				host = i.(map[string]interface{})["host"]
-				port = i.(map[string]interface{})["service_port"]
+	for _, v1 := range JSON.Data[0].Attributes.PortMappings {
+		for _, v2 := range v1 {
+			if v2.ContainerPort == Port {
+				configs.Add(v2.Host, Password, v2.ServicePort)
 			}
 		}
 	}
-	centen := fmt.Sprintf(file, host, port)
-	file, _ := os.Create("gui-config.json") // create创建文件时如果存在会清空文件，不会返回错误
-	defer file.Close()
-	file.WriteString(centen)
-}
-
-func run() {
-	err := exec.Command("Shadowsocks.exe").Start()
+	file, err := os.Create("gui-config.json")
 	if err != nil {
-		log.Fatalln("找不到 Shadowsocks.exe 文件， 请将本程序移动到Shadowsocks.exe根目录！")
+		log.Fatalln(err)
 	}
-	log.Println("状态：正常运行")
+	if data, err := configs.Result(); err == nil {
+		file.Write(data)
+		return true
+	}
+	defer file.Close()
+	return false
 }
